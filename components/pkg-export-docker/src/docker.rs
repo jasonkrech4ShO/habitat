@@ -70,7 +70,12 @@ impl<'a> DockerBuilder<'a> {
     /// * If building the Docker image fails
     pub fn build(self) -> Result<DockerImage> {
         let mut cmd = docker_cmd();
-        cmd.current_dir(self.workdir).arg("build").arg("--force-rm");
+
+        // Buildah copy doesn't seem to honor the cache?
+        cmd.current_dir(self.workdir)
+           .arg("build-using-dockerfile")
+           .arg("--layers");
+        //           .arg("--force-rm");
         if let Some(mem) = self.memory {
             cmd.arg("--memory").arg(mem);
         }

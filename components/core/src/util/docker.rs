@@ -1,10 +1,10 @@
-use crate::{error::{Error,
-                    Result},
-            fs::find_command};
-use std::{path::PathBuf,
-          process::Command};
+use crate::{
+    error::{Error, Result},
+    fs::find_command,
+};
+use std::{path::PathBuf, process::Command};
 
-const DOCKER_CMD: &str = "docker";
+const DOCKER_CMD: &str = "buildah";
 
 pub fn command_path() -> Result<PathBuf> {
     find_command(DOCKER_CMD).ok_or_else(|| Error::DockerCommandNotFound(DOCKER_CMD))
@@ -32,9 +32,9 @@ pub fn default_base_tag_for_host() -> Result<&'static str> {
                 os_info::VersionType::Semantic(10, 0, 17134) => Ok("1803"),
                 os_info::VersionType::Semantic(10, 0, 17763) => Ok("ltsc2019"),
                 os_info::VersionType::Semantic(10, 0, 18362) => Ok("1903"),
-                unsupported_version => {
-                    Err(Error::UnsupportedDockerHostKernel(unsupported_version.to_string()))
-                }
+                unsupported_version => Err(Error::UnsupportedDockerHostKernel(
+                    unsupported_version.to_string(),
+                )),
             }
         }
     } else {
