@@ -1,19 +1,19 @@
-mod bldr;
-mod cli;
-mod config;
-mod file;
-mod license;
-mod origin;
-mod pkg;
-mod plan;
-mod ring;
-mod studio;
+pub mod bldr;
+pub mod cli;
+pub mod config;
+pub mod file;
+pub mod license;
+pub mod origin;
+pub mod pkg;
+pub mod plan;
+pub mod ring;
+pub mod studio;
 pub mod sup;
-mod svc;
+pub mod svc;
 #[cfg(test)]
 mod tests;
-mod user;
-mod util;
+pub mod user;
+pub mod util;
 
 use self::{bldr::{Bldr,
                   ConfigOptBldr},

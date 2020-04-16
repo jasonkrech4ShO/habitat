@@ -18,7 +18,7 @@ pub enum Key {
     /// Generates a Habitat user key
     Generate {
         /// Name of the user key
-        #[structopt(name = "USER")]
+        #[structopt()]
         user:           String,
         #[structopt(flatten)]
         cache_key_path: CacheKeyPath,

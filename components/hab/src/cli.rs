@@ -2,6 +2,7 @@ pub mod hab;
 
 use crate::{cli::hab::{sup::{ConfigOptSup,
                              Sup},
+                       user::User,
                        ConfigOptHab,
                        Hab},
             command::studio};
@@ -896,24 +897,7 @@ pub fn get(feature_flags: FeatureFlag) -> App<'static, 'static> {
             (about: "Create a tarball of Habitat Supervisor data to send to support")
             (aliases: &["supp", "suppo", "suppor", "support-bundle"])
         )
-        (@subcommand user =>
-            (about: "Commands relating to Habitat users")
-            (aliases: &["u", "us", "use"])
-            (@setting ArgRequiredElseHelp)
-            (@setting SubcommandRequiredElseHelp)
-            (@subcommand key =>
-                (about: "Commands relating to Habitat user keys")
-                (aliases: &["k", "ke"])
-                (@setting ArgRequiredElseHelp)
-                (@setting SubcommandRequiredElseHelp)
-                (@subcommand generate =>
-                    (about: "Generates a Habitat user key")
-                    (aliases: &["g", "ge", "gen", "gene", "gener", "genera", "generat"])
-                    (@arg USER: +required +takes_value "Name of the user key")
-                    (arg: arg_cache_key_path())
-                )
-            )
-        )
+        (subcommand: User::clap().name("user"))
         (subcommand: alias_apply)
         (subcommand: alias_install)
         (subcommand: alias_run())
