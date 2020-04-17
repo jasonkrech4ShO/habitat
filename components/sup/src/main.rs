@@ -152,7 +152,7 @@ async fn start_rsr_imlw_mlw_gsw_smw_rhw_msw(feature_flags: FeatureFlag) -> Resul
     }
     liveliness_checker::spawn_thread_alive_checker();
     let launcher = boot();
-    let app_matches = match cli(feature_flags).get_matches_safe() {
+    let app_matches = match cli().get_matches_safe() {
         Ok(matches) => matches,
         Err(err) => {
             let out = io::stdout();
@@ -566,8 +566,8 @@ mod test {
         fn cmd_vec_from_cmd_str(cmd: &str) -> Vec<&str> { Vec::from_iter(cmd.split_whitespace()) }
 
         fn config_from_cmd_vec(cmd_vec: Vec<&str>) -> ManagerConfig {
-            let matches = cli(no_feature_flags()).get_matches_from_safe(cmd_vec)
-                                                 .expect("Error while getting matches");
+            let matches = cli().get_matches_from_safe(cmd_vec)
+                               .expect("Error while getting matches");
             let (_, sub_matches) = matches.subcommand();
             let sub_matches = sub_matches.expect("Error getting sub command matches");
 

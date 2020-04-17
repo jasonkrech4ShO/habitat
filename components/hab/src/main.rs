@@ -168,11 +168,10 @@ async fn start(ui: &mut UI, feature_flags: FeatureFlag) -> Result<()> {
     // https://github.com/kbknapp/clap-rs/issues/86
     let child = thread::Builder::new().stack_size(8 * 1024 * 1024)
                                       .spawn(move || {
-                                          cli::get(feature_flags)
-                .get_matches_from_safe_borrow(&mut args.iter())
-                .unwrap_or_else(|e| {
-                    e.exit();
-                })
+                                          cli::get().get_matches_from_safe_borrow(&mut args.iter())
+                                                    .unwrap_or_else(|e| {
+                                                        e.exit();
+                                                    })
                                       })
                                       .unwrap();
     let app_matches = child.join().unwrap();
@@ -182,7 +181,7 @@ async fn start(ui: &mut UI, feature_flags: FeatureFlag) -> Result<()> {
         ("cli", Some(matches)) => {
             match matches.subcommand() {
                 ("setup", Some(m)) => sub_cli_setup(ui, m)?,
-                ("completers", Some(m)) => sub_cli_completers(m, feature_flags)?,
+                ("completers", Some(m)) => sub_cli_completers(m)?,
                 _ => unreachable!(),
             }
         }
@@ -372,16 +371,11 @@ fn sub_cli_setup(ui: &mut UI, m: &ArgMatches<'_>) -> Result<()> {
     command::cli::setup::start(ui, &cache_key_path)
 }
 
-fn sub_cli_completers(m: &ArgMatches<'_>, feature_flags: FeatureFlag) -> Result<()> {
+fn sub_cli_completers(m: &ArgMatches<'_>) -> Result<()> {
     let shell = m.value_of("SHELL")
                  .expect("Missing Shell; A shell is required");
 
-    // TODO (CM): Interesting... the completions generated can depend
-    // on what feature flags happen to be enabled at the time you
-    // generated the completions
-    cli::get(feature_flags).gen_completions_to("hab",
-                                               shell.parse::<Shell>().unwrap(),
-                                               &mut io::stdout());
+    cli::get().gen_completions_to("hab", shell.parse::<Shell>().unwrap(), &mut io::stdout());
     Ok(())
 }
 
@@ -2167,7 +2161,7 @@ mod test {
 
         fn matches_for_pkg_install<'a>(pkg_install_args: &'a [&'a str]) -> ArgMatches<'a> {
             let pre_pkg_install_args = &["hab", "pkg", "install"];
-            let app_matches = cli::get(FeatureFlag::empty())
+            let app_matches = cli::get()
                 .get_matches_from_safe(pre_pkg_install_args.iter().chain(pkg_install_args.iter()))
                 .unwrap(); // Force panics on CLAP errors, so we can use #[should_panic]
             match app_matches.subcommand() {
