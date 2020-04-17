@@ -1561,7 +1561,7 @@ fn valid_binding_mode(val: String) -> result::Result<(), String> {
 fn valid_role(val: String) -> result::Result<(), String> {
     match OriginMemberRole::from_str(&val) {
         Ok(_) => Ok(()),
-        Err(_) => Err(format!("Binding mode: '{}' is not valid", &val)),
+        Err(_) => Err(format!("Role name: '{}' is not valid", &val)),
     }
 }
 
