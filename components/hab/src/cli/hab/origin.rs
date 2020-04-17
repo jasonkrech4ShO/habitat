@@ -1,7 +1,8 @@
 use super::util::{AuthToken,
                   BldrUrl,
                   CacheKeyPath};
-use crate::cli::valid_origin;
+use crate::cli::{valid_origin,
+                 valid_role};
 use habitat_core::crypto::keys::PairType;
 use std::path::PathBuf;
 use structopt::{clap::ArgGroup,
@@ -56,6 +57,8 @@ pub enum Origin {
     },
     Invitations(Invitations),
     Key(Key),
+    /// Role Based Access Control for origin members
+    Rbac(Rbac),
     Secret(Secret),
     /// Transfers ownership of an origin to another member of that origin
     Transfer {
@@ -229,6 +232,57 @@ pub struct UploadGroup {
     /// Path to a local public origin key file on disk
     #[structopt(name = "PUBLIC_FILE", long = "pubfile", group = "upload")]
     public_file: Option<PathBuf>,
+}
+
+#[derive(StructOpt)]
+#[structopt(no_version)]
+/// Commands related to origin rbac
+pub enum Rbac {
+    /// Display an origin member's current role
+    Show {
+        /// The account name of the role to display
+        #[structopt(name = "MEMBER_ACCOUNT")]
+        member_account: String,
+        /// The origin name the member account belongs to
+        #[structopt(name = "ORIGIN",
+                short = "o",
+                long = "origin",
+                validator = valid_origin)]
+        origin:         Option<String>,
+        #[structopt(flatten)]
+        bldr_url:       BldrUrl,
+        #[structopt(flatten)]
+        auth_token:     AuthToken,
+        #[structopt(name = "TO_JSON", short = "j", long = "json")]
+        to_json:        bool,
+    },
+    Set {
+        /// The account name of the role to display
+        #[structopt(name = "MEMBER_ACCOUNT")]
+        member_account: String,
+        /// The origin name the member account belongs to
+        #[structopt(name = "ORIGIN",
+                short = "o",
+                long = "origin",
+                validator = valid_origin)]
+        origin:         Option<String>,
+        /// The role to set for the member account
+        #[structopt(name = "ROLE",
+                short = "r",
+                long = "role",
+                required = true,
+                validator = valid_role)]
+        role:           String,
+        #[structopt(flatten)]
+        bldr_url:       BldrUrl,
+        #[structopt(flatten)]
+        auth_token:     AuthToken,
+        /// Output will be rendered in json
+        #[structopt(name = "TO_JSON", short = "j", long = "json")]
+        /// Do not prompt for confirmation
+        #[structopt(name = "NO_PROMPT", short = "n", long = "no-prompt")]
+        no_prompt:      bool,
+    },
 }
 
 #[derive(StructOpt)]
