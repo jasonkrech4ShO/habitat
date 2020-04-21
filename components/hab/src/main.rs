@@ -1478,8 +1478,10 @@ async fn exec_subcommand_if_called(ui: &mut UI) -> Result<()> {
     let third = args.next().unwrap_or_default();
 
     match (first.as_str(), second.as_str(), third.as_str()) {
+        ("pkg", "export", "container") |
         ("pkg", "export", "docker") => {
-            command::pkg::export::docker::start(ui, &args_after_first(4)).await
+            // "docker" is an alias now
+            command::pkg::export::container::start(ui, &args_after_first(4)).await
         }
         ("pkg", "export", "cf") => command::pkg::export::cf::start(ui, &args_after_first(4)).await,
         ("pkg", "export", "tar") => {

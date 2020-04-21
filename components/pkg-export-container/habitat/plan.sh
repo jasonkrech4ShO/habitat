@@ -1,12 +1,13 @@
 # shellcheck disable=2154
-pkg_name=hab-pkg-export-docker
+pkg_name=hab-pkg-export-container
 _pkg_distname=$pkg_name
 pkg_origin=core
 pkg_maintainer="The Habitat Maintainers <humans@habitat.sh>"
 pkg_license=('Apache-2.0')
 # The result is a portable, static binary. However, we shell out to the
 # Docker command which we need at runtime.
-pkg_deps=(core/docker)
+pkg_deps=(core/docker
+          core/buildah/1.14.8/20200421190449)
 pkg_build_deps=(core/musl
                 core/zlib-musl
                 core/xz-musl
