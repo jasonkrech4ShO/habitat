@@ -4,7 +4,7 @@ use crate::{
 };
 use std::{path::PathBuf, process::Command};
 
-const DOCKER_CMD: &str = "buildah";
+const DOCKER_CMD: &str = "docker";
 
 pub fn command_path() -> Result<PathBuf> {
     find_command(DOCKER_CMD).ok_or_else(|| Error::DockerCommandNotFound(DOCKER_CMD))
