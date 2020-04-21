@@ -30,7 +30,7 @@ const DOCKERFILE: &str = include_str!("../defaults/Dockerfile_win.hbs");
 const BUILD_REPORT: &str = include_str!("../defaults/last_docker_export.env.hbs");
 
 /// A builder used to create a Docker image.
-pub struct DockerBuilder<'a> {
+pub struct ImageBuilder<'a> {
     /// The base workdir which hosts the root file system.
     workdir: &'a Path,
     /// The name for the image.
@@ -41,14 +41,14 @@ pub struct DockerBuilder<'a> {
     memory:  Option<&'a str>,
 }
 
-impl<'a> DockerBuilder<'a> {
+impl<'a> ImageBuilder<'a> {
     fn new<S>(workdir: &'a Path, name: S) -> Self
         where S: Into<String>
     {
-        DockerBuilder { workdir,
-                        name: name.into(),
-                        tags: Vec::new(),
-                        memory: None }
+        ImageBuilder { workdir,
+                       name: name.into(),
+                       tags: Vec::new(),
+                       memory: None }
     }
 
     /// Adds a tag for the Docker image.
@@ -63,12 +63,12 @@ impl<'a> DockerBuilder<'a> {
         self
     }
 
-    /// Builds the Docker image locally and returns the corresponding `DockerImage`.
+    /// Builds the container image locally and returns the corresponding `ContainerImage`.
     ///
     /// # Errors
     ///
     /// * If building the Docker image fails
-    pub fn build(self) -> Result<DockerImage> {
+    pub fn build(self) -> Result<ContainerImage> {
         let mut cmd = docker_cmd();
 
         // Buildah copy doesn't seem to honor the cache?
@@ -98,10 +98,10 @@ impl<'a> DockerBuilder<'a> {
             None => self.image_id(&self.name)?,
         };
 
-        Ok(DockerImage { id,
-                         name: self.name,
-                         tags: self.tags,
-                         workdir: self.workdir.to_owned() })
+        Ok(ContainerImage { id,
+                            name: self.name,
+                            tags: self.tags,
+                            workdir: self.workdir.to_owned() })
     }
 
     fn image_id(&self, image_tag: &str) -> Result<String> {
@@ -119,7 +119,7 @@ impl<'a> DockerBuilder<'a> {
 }
 
 /// A built Docker image which exists locally.
-pub struct DockerImage {
+pub struct ContainerImage {
     /// The image ID for this image.
     id:      String,
     /// The name of this image.
@@ -130,7 +130,7 @@ pub struct DockerImage {
     workdir: PathBuf,
 }
 
-impl<'a> DockerImage {
+impl<'a> ContainerImage {
     /// Pushes the Docker image, with all tags, to a remote registry using the provided
     /// `Credentials`.
     ///
@@ -330,7 +330,7 @@ impl DockerBuildRoot {
                   ui: &mut UI,
                   naming: &Naming,
                   memory: Option<&str>)
-                  -> Result<DockerImage> {
+                  -> Result<ContainerImage> {
         self.build_docker_image(ui, naming, memory)
     }
 
@@ -339,7 +339,7 @@ impl DockerBuildRoot {
                   ui: &mut UI,
                   naming: &Naming,
                   memory: Option<&str>)
-                  -> Result<DockerImage> {
+                  -> Result<ContainerImage> {
         let mut cmd = docker_cmd();
         cmd.arg("version").arg("--format='{{.Server.Os}}'");
         debug!("Running command: {:?}", cmd);
@@ -438,7 +438,7 @@ impl DockerBuildRoot {
                           ui: &mut UI,
                           naming: &Naming,
                           memory: Option<&str>)
-                          -> Result<DockerImage> {
+                          -> Result<ContainerImage> {
         ui.status(Status::Creating, "Docker image")?;
         let ident = self.0.ctx().installed_primary_svc_ident()?;
         let version = &ident.version.expect("version exists");
@@ -464,7 +464,7 @@ impl DockerBuildRoot {
                              None => image_name,
                          }.to_lowercase();
 
-        let mut builder = DockerBuilder::new(self.0.workdir(), image_name);
+        let mut builder = ImageBuilder::new(self.0.workdir(), image_name);
         if naming.version_release_tag {
             builder = builder.tag(format!("{}-{}", &version, &release));
         }
