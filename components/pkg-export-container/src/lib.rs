@@ -8,17 +8,14 @@ extern crate log;
 extern crate serde_json;
 
 pub use crate::{build::BuildSpec,
-                cli::{Cli,
-                      PkgIdentArgOptions},
+                cli::PkgIdentArgOptions,
                 docker::{ContainerImage,
                          DockerBuildRoot},
                 engine::Engine,
                 error::{Error,
                         Result}};
-use clap::App;
-use habitat_common::{ui::{UIWriter,
-                          UI},
-                     PROGRAM_NAME};
+use habitat_common::ui::{UIWriter,
+                         UI};
 use habitat_core::url::default_bldr_url;
 use rusoto_core::{request::HttpClient,
                   Region};
@@ -33,7 +30,7 @@ use std::{env,
 
 mod accounts;
 mod build;
-mod cli;
+pub mod cli;
 mod docker;
 mod engine;
 mod error;
@@ -233,23 +230,4 @@ pub async fn export_for_cli_matches(ui: &mut UI,
     } else {
         Ok(Some(docker_image))
     }
-}
-
-/// Create the Clap CLI for the Docker exporter
-pub fn cli<'a, 'b>() -> App<'a, 'b> {
-    let name: &str = &*PROGRAM_NAME;
-    let about = "Creates (and optionally pushes) a Docker image from a set of Habitat packages";
-
-    let mut cli = Cli::new(name, about).add_base_packages_args()
-                                       .add_builder_args()
-                                       .add_tagging_args()
-                                       .add_publishing_args()
-                                       .add_memory_arg()
-                                       .add_layer_arg()
-                                       .add_engine_arg()
-                                       .add_pkg_ident_arg(PkgIdentArgOptions { multiple: true });
-    if cfg!(windows) {
-        cli = cli.add_base_image_arg();
-    }
-    cli.app
 }

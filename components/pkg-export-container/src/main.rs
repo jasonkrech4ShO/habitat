@@ -19,7 +19,7 @@ async fn main() {
 }
 
 async fn start(ui: &mut UI) -> Result<()> {
-    let cli = cli();
+    let cli = cli::cli();
     let m = cli.get_matches();
     debug!("clap cli args: {:?}", m);
     export_for_cli_matches(ui, &m).await.map(|_| ())
