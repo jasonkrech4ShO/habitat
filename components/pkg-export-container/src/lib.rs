@@ -206,7 +206,7 @@ pub async fn export_for_cli_matches(ui: &mut UI,
                                     matches: &clap::ArgMatches<'_>)
                                     -> Result<Option<ContainerImage>> {
     #[cfg(windows)]
-    fail_if_not_in_windows_mode()?;
+    DockerOS::fail_if_not_in_windows_mode()?;
 
     let default_url = default_bldr_url();
     let spec = BuildSpec::new_from_cli_matches(&matches, &default_url)?;
@@ -240,27 +240,38 @@ pub async fn export_for_cli_matches(ui: &mut UI,
 ///
 /// If the daemon is in Linux mode, we return an error and should stop
 /// the export process.
-#[cfg(windows)]
-fn fail_if_not_in_windows_mode() -> Result<()> {
-    let os = docker_server_os()?;
-    if os != "windows" {
-        Err(Error::DockerNotInWindowsMode(os).into())
-    } else {
-        Ok(())
-    }
+#[derive(Clone, Copy, Debug)]
+pub enum DockerOS {
+    Linux,
+    Windows,
 }
 
-/// Returns the OS for which the locally-running Docker daemon is
-/// managing containers.
-///
-/// Daemons running on Linux will report "linux", while a Windows
-/// daemon may report "windows" or "linux", depending on what mode
-/// it is currently running in.
-#[allow(dead_code)]
-fn docker_server_os() -> Result<String> {
-    let mut cmd = Engine::Docker.command();
-    cmd.arg("version").arg("--format='{{.Server.Os}}'");
-    debug!("Running command: {:?}", cmd);
-    let result = cmd.output().expect("Docker command failed to spawn");
-    Ok(String::from_utf8_lossy(&result.stdout).into_owned())
+impl DockerOS {
+    /// Returns the OS for which the locally-running Docker daemon is
+    /// managing containers.
+    ///
+    /// Daemons running on Linux will report "Linux", while a Windows
+    /// daemon may report "Windows" or "Linux", depending on what mode
+    /// it is currently running in.
+    #[allow(dead_code)]
+    fn current() -> DockerOS {
+        let mut cmd = Engine::Docker.command();
+        cmd.arg("version").arg("--format='{{.Server.Os}}'");
+        debug!("Running command: {:?}", cmd);
+        let result = cmd.output().expect("Docker command failed to spawn");
+        let result = String::from_utf8_lossy(&result.stdout);
+        if result.contains("windows") {
+            DockerOS::Windows
+        } else {
+            DockerOS::Linux
+        }
+    }
+
+    #[cfg(windows)]
+    pub fn fail_if_not_in_windows_mode() -> Result<()> {
+        match DockerOS::current() {
+            DockerOS::Windows => Ok(()),
+            other => Err(Error::DockerNotInWindowsMode(other).into()),
+        }
+    }
 }

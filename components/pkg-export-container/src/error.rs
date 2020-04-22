@@ -1,3 +1,4 @@
+use crate::DockerOS;
 use base64::DecodeError;
 use failure;
 use rusoto_core::RusotoError;
@@ -17,9 +18,9 @@ pub enum Error {
     #[fail(display = "Could not determine Docker image ID for image: {}", _0)]
     DockerImageIdNotFound(String),
     #[fail(display = "Switch to Windows containers to export Docker images on Windows. Current \
-                      Docker Server OS is set to: {}",
+                      Docker Server OS is set to: {:?}",
            _0)]
-    DockerNotInWindowsMode(String),
+    DockerNotInWindowsMode(DockerOS),
     #[fail(display = "Invalid registry type: {}", _0)]
     InvalidRegistryType(String),
     #[fail(display = "{}", _0)]
