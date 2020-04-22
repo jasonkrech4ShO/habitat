@@ -32,6 +32,7 @@ impl FromStr for Engine {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "docker" => Ok(Engine::Docker),
+            #[cfg(not(windows))]
             "buildah" => Ok(Engine::Buildah),
             _ => Err("LOLWUT".to_string()),
         }
