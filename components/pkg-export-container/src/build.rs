@@ -50,11 +50,6 @@ use tempfile::TempDir;
 // the future for use with further exporters.
 // https://github.com/habitat-sh/habitat/issues/4522
 
-#[cfg(unix)]
-const DEFAULT_BASE_IMAGE: &str = "scratch";
-#[cfg(windows)]
-const DEFAULT_BASE_IMAGE: &str = "mcr.microsoft.com/windows/servercore";
-
 const DEFAULT_HAB_IDENT: &str = "core/hab";
 const DEFAULT_LAUNCHER_IDENT: &str = "core/hab-launcher";
 const DEFAULT_SUP_IDENT: &str = "core/hab-sup";
@@ -63,18 +58,18 @@ const DEFAULT_USER_AND_GROUP_ID: u32 = 42;
 const DEFAULT_HAB_UID: u32 = 84;
 const DEFAULT_HAB_GID: u32 = 84;
 
-fn default_docker_base_image() -> Result<String> {
-    #[cfg(unix)]
-    {
-        Ok(DEFAULT_BASE_IMAGE.to_string())
-    }
+#[cfg(unix)]
+fn default_docker_base_image() -> Result<String> { Ok("scratch".to_string()) }
 
-    #[cfg(windows)]
-    {
-        Ok(format!("{}:{}",
-                   DEFAULT_BASE_IMAGE,
-                   docker::default_base_tag_for_host()?))
-    }
+#[cfg(windows)]
+fn default_docker_base_image() -> Result<String> {
+    // This is potentially error-returning because the image tag
+    // depends on the specifics of the Windows version we're running
+    // on, as well as the configuration of the Docker daemon being
+    // used.
+    Ok(format!("{}:{}",
+               "mcr.microsoft.com/windows/servercore",
+               docker::default_base_tag_for_host()?))
 }
 
 /// The specification for creating a temporary file system build root, based on Habitat packages.
