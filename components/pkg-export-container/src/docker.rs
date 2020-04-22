@@ -324,46 +324,6 @@ impl DockerBuildRoot {
     /// * If the temporary work directory cannot be removed
     pub fn destroy(self, ui: &mut UI) -> Result<()> { self.0.destroy(ui) }
 
-    /// Build the Docker image locally using the provided naming policy.
-    ///
-    /// # Errors
-    ///
-    /// * If the Docker image cannot be created successfully
-    #[cfg(unix)]
-    pub fn export(&self,
-                  ui: &mut UI,
-                  naming: &Naming,
-                  memory: Option<&str>,
-                  engine: Engine)
-                  -> Result<ContainerImage> {
-        self.build_docker_image(ui, naming, memory, engine)
-    }
-
-    #[cfg(windows)]
-    pub fn export(&self,
-                  ui: &mut UI,
-                  naming: &Naming,
-                  memory: Option<&str>,
-                  engine: Engine)
-                  -> Result<ContainerImage> {
-        let mut cmd = engine.command();
-
-        // TODO: WARNING - THIS DOESN'T WORK ON BUILDAH but it's OK
-        // now since there is no windows buildah
-
-        cmd.arg("version").arg("--format='{{.Server.Os}}'");
-        debug!("Running command: {:?}", cmd);
-        // TODO (CM): Docker command... not always docker! (well, it
-        // is here on windows...)
-        let result = cmd.output().expect("Docker command failed to spawn");
-        let os = String::from_utf8_lossy(&result.stdout);
-        if !os.contains("windows") {
-            return Err(Error::DockerNotInWindowsMode(os.to_string()).into());
-        }
-
-        self.build_docker_image(ui, naming, memory, engine)
-    }
-
     #[cfg(unix)]
     fn add_users_and_groups(&self, ui: &mut UI) -> Result<()> {
         use std::{fs::OpenOptions,
@@ -446,12 +406,17 @@ impl DockerBuildRoot {
         Ok(())
     }
 
-    fn build_docker_image(&self,
-                          ui: &mut UI,
-                          naming: &Naming,
-                          memory: Option<&str>,
-                          engine: Engine)
-                          -> Result<ContainerImage> {
+    /// Build the Docker image locally using the provided naming policy.
+    ///
+    /// # Errors
+    ///
+    /// * If the Docker image cannot be created successfully
+    pub fn export(&self,
+                  ui: &mut UI,
+                  naming: &Naming,
+                  memory: Option<&str>,
+                  engine: Engine)
+                  -> Result<ContainerImage> {
         ui.status(Status::Creating, "Docker image")?;
         let ident = self.0.ctx().installed_primary_svc_ident()?;
         let version = &ident.version.expect("version exists");

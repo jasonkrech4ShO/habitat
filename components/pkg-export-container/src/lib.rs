@@ -205,6 +205,9 @@ pub async fn export<'a>(ui: &'a mut UI,
 pub async fn export_for_cli_matches(ui: &mut UI,
                                     matches: &clap::ArgMatches<'_>)
                                     -> Result<Option<ContainerImage>> {
+    #[cfg(windows)]
+    fail_if_not_in_windows_mode()?;
+
     let default_url = default_bldr_url();
     let spec = BuildSpec::new_from_cli_matches(&matches, &default_url)?;
     let naming = Naming::new_from_cli_matches(&matches);
@@ -229,4 +232,35 @@ pub async fn export_for_cli_matches(ui: &mut UI,
     } else {
         Ok(Some(docker_image))
     }
+}
+
+/// Currently when exporting containers on Windows, the Docker daemon
+/// *must* be in Windows mode (i.e., only Windows containers can be
+/// exported on Windows machines).
+///
+/// If the daemon is in Linux mode, we return an error and should stop
+/// the export process.
+#[cfg(windows)]
+fn fail_if_not_in_windows_mode() -> Result<()> {
+    let os = docker_server_os()?;
+    if os != "windows" {
+        Err(Error::DockerNotInWindowsMode(os).into())
+    } else {
+        Ok(())
+    }
+}
+
+/// Returns the OS for which the locally-running Docker daemon is
+/// managing containers.
+///
+/// Daemons running on Linux will report "linux", while a Windows
+/// daemon may report "windows" or "linux", depending on what mode
+/// it is currently running in.
+#[allow(dead_code)]
+fn docker_server_os() -> Result<String> {
+    let mut cmd = Engine::Docker.command();
+    cmd.arg("version").arg("--format='{{.Server.Os}}'");
+    debug!("Running command: {:?}", cmd);
+    let result = cmd.output().expect("Docker command failed to spawn");
+    Ok(String::from_utf8_lossy(&result.stdout).into_owned())
 }
