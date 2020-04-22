@@ -208,7 +208,7 @@ pub async fn export<'a>(ui: &'a mut UI,
 /// * The image (tags) cannot be removed.
 pub async fn export_for_cli_matches(ui: &mut UI,
                                     matches: &clap::ArgMatches<'_>)
-                                    -> Result<Option<DockerImage>> {
+                                    -> Result<Option<ContainerImage>> {
     let default_url = default_bldr_url();
     let spec = BuildSpec::new_from_cli_matches(&matches, &default_url)?;
     let naming = Naming::new_from_cli_matches(&matches);
