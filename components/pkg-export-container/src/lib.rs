@@ -8,7 +8,6 @@ extern crate log;
 extern crate serde_json;
 
 pub use crate::{build::BuildSpec,
-                cli::PkgIdentArgOptions,
                 docker::{ContainerImage,
                          DockerBuildRoot},
                 engine::Engine,
