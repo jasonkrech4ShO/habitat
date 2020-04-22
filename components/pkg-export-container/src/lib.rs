@@ -12,6 +12,7 @@ pub use crate::{build::BuildSpec,
                       PkgIdentArgOptions},
                 docker::{DockerBuildRoot,
                          DockerImage},
+                engine::Engine,
                 error::{Error,
                         Result}};
 use clap::App;
@@ -34,6 +35,7 @@ mod accounts;
 mod build;
 mod cli;
 mod docker;
+mod engine;
 mod error;
 mod graph;
 #[cfg(unix)]
@@ -178,12 +180,13 @@ impl Credentials {
 pub async fn export<'a>(ui: &'a mut UI,
                         build_spec: BuildSpec<'a>,
                         naming: &'a Naming<'a>,
-                        memory: Option<&'a str>)
-                        -> Result<DockerImage> {
+                        memory: Option<&'a str>,
+                        engine: Engine)
+                        -> Result<ContainerImage> {
     ui.begin(format!("Building a runnable Docker image with: {}",
                      build_spec.idents_or_archives.join(", ")))?;
     let build_root = DockerBuildRoot::from_build_root(build_spec.create(ui).await?, ui)?;
-    let image = build_root.export(ui, naming, memory)?;
+    let image = build_root.export(ui, naming, memory, engine)?;
     build_root.destroy(ui)?;
     ui.end(format!("Docker image '{}' created with tags: {}",
                    image.name(),
@@ -210,7 +213,9 @@ pub async fn export_for_cli_matches(ui: &mut UI,
     let spec = BuildSpec::new_from_cli_matches(&matches, &default_url)?;
     let naming = Naming::new_from_cli_matches(&matches);
 
-    let docker_image = export(ui, spec, &naming, matches.value_of("MEMORY_LIMIT")).await?;
+    let engine = Engine::new_from_cli_matches(&matches);
+
+    let docker_image = export(ui, spec, &naming, matches.value_of("MEMORY_LIMIT"), engine).await?;
     docker_image.create_report(ui, env::current_dir()?.join("results"))?;
 
     if matches.is_present("PUSH_IMAGE") {
@@ -241,6 +246,7 @@ pub fn cli<'a, 'b>() -> App<'a, 'b> {
                                        .add_publishing_args()
                                        .add_memory_arg()
                                        .add_layer_arg()
+                                       .add_engine_arg()
                                        .add_pkg_ident_arg(PkgIdentArgOptions { multiple: true });
     if cfg!(windows) {
         cli = cli.add_base_image_arg();

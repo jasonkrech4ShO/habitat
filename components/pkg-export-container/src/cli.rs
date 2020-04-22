@@ -1,4 +1,5 @@
-use crate::RegistryType;
+use crate::{engine::Engine,
+            RegistryType};
 use clap::{App,
            Arg};
 use habitat_core::package::PackageIdent;
@@ -311,6 +312,12 @@ impl<'a, 'b> Cli<'a, 'b> {
                                                          specifying this option to add all \
                                                          Habitat packages in a single layer \
                                                          (which is the default behavior)."));
+        Cli { app }
+    }
+
+    pub fn add_engine_arg(self) -> Self {
+        let arg = Engine::cli_arg();
+        let app = self.app.arg(arg);
         Cli { app }
     }
 }

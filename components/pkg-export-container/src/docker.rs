@@ -1,4 +1,5 @@
 use crate::{build::BuildRoot,
+            engine::Engine,
             error::{Error,
                     Result},
             util,
@@ -39,16 +40,20 @@ pub struct ImageBuilder<'a> {
     tags:    Vec<String>,
     /// Optional memory limit to pass to pass to the docker build
     memory:  Option<&'a str>,
+
+    /// The underlying container engine to use for the image build.
+    engine: Engine,
 }
 
 impl<'a> ImageBuilder<'a> {
-    fn new<S>(workdir: &'a Path, name: S) -> Self
+    fn new<S>(workdir: &'a Path, name: S, engine: Engine) -> Self
         where S: Into<String>
     {
         ImageBuilder { workdir,
                        name: name.into(),
                        tags: Vec::new(),
-                       memory: None }
+                       memory: None,
+                       engine }
     }
 
     /// Adds a tag for the Docker image.
@@ -69,12 +74,11 @@ impl<'a> ImageBuilder<'a> {
     ///
     /// * If building the Docker image fails
     pub fn build(self) -> Result<ContainerImage> {
-        let mut cmd = docker_cmd();
+        let mut cmd = self.engine.command();
 
-        // Buildah copy doesn't seem to honor the cache?
         cmd.current_dir(self.workdir)
-           .arg("build-using-dockerfile")
-           .arg("--layers");
+           .arg(self.engine.build_subcommand());
+        // .arg("--layers"); // --layers is a buildah option
         //           .arg("--force-rm");
         if let Some(mem) = self.memory {
             cmd.arg("--memory").arg(mem);
@@ -329,27 +333,35 @@ impl DockerBuildRoot {
     pub fn export(&self,
                   ui: &mut UI,
                   naming: &Naming,
-                  memory: Option<&str>)
+                  memory: Option<&str>,
+                  engine: Engine)
                   -> Result<ContainerImage> {
-        self.build_docker_image(ui, naming, memory)
+        self.build_docker_image(ui, naming, memory, engine)
     }
 
     #[cfg(windows)]
     pub fn export(&self,
                   ui: &mut UI,
                   naming: &Naming,
-                  memory: Option<&str>)
+                  memory: Option<&str>,
+                  engine: Engine)
                   -> Result<ContainerImage> {
-        let mut cmd = docker_cmd();
+        let mut cmd = engine.command();
+
+        // TODO: WARNING - THIS DOESN'T WORK ON BUILDAH but it's OK
+        // now since there is no windows buildah
+
         cmd.arg("version").arg("--format='{{.Server.Os}}'");
         debug!("Running command: {:?}", cmd);
+        // TODO (CM): Docker command... not always docker! (well, it
+        // is here on windows...)
         let result = cmd.output().expect("Docker command failed to spawn");
         let os = String::from_utf8_lossy(&result.stdout);
         if !os.contains("windows") {
             return Err(Error::DockerNotInWindowsMode(os.to_string()).into());
         }
 
-        self.build_docker_image(ui, naming, memory)
+        self.build_docker_image(ui, naming, memory, engine)
     }
 
     #[cfg(unix)]
@@ -437,7 +449,8 @@ impl DockerBuildRoot {
     fn build_docker_image(&self,
                           ui: &mut UI,
                           naming: &Naming,
-                          memory: Option<&str>)
+                          memory: Option<&str>,
+                          engine: Engine)
                           -> Result<ContainerImage> {
         ui.status(Status::Creating, "Docker image")?;
         let ident = self.0.ctx().installed_primary_svc_ident()?;
@@ -464,7 +477,7 @@ impl DockerBuildRoot {
                              None => image_name,
                          }.to_lowercase();
 
-        let mut builder = ImageBuilder::new(self.0.workdir(), image_name);
+        let mut builder = ImageBuilder::new(self.0.workdir(), image_name, engine);
         if naming.version_release_tag {
             builder = builder.tag(format!("{}-{}", &version, &release));
         }
