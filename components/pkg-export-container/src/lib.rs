@@ -10,8 +10,8 @@ extern crate serde_json;
 pub use crate::{build::BuildSpec,
                 cli::{Cli,
                       PkgIdentArgOptions},
-                docker::{DockerBuildRoot,
-                         DockerImage},
+                docker::{ContainerImage,
+                         DockerBuildRoot},
                 engine::Engine,
                 error::{Error,
                         Result}};
