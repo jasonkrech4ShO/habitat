@@ -20,9 +20,9 @@ use crate::{accounts::{EtcGroupEntry,
                     Result},
             hcore::{env,
                     fs::{cache_artifact_path,
-                         cache_key_path,
                          CACHE_ARTIFACT_PATH,
-                         CACHE_KEY_PATH},
+                         CACHE_KEY_PATH,
+                         CACHE_KEY_PATH_POSTFIX},
                     package::{PackageArchive,
                               PackageIdent,
                               PackageInstall},
@@ -199,8 +199,8 @@ impl<'a> BuildSpec<'a> {
 
     fn create_symlink_to_key_cache(&self, ui: &mut UI, rootfs: &Path) -> Result<()> {
         ui.status(Status::Creating, "key cache symlink")?;
-        let src = cache_key_path(None::<&Path>);
-        let dst = rootfs.join(CACHE_KEY_PATH);
+        let src = &*CACHE_KEY_PATH;
+        let dst = rootfs.join(CACHE_KEY_PATH_POSTFIX);
         stdfs::create_dir_all(dst.parent().expect("parent directory exists"))?;
         debug!("Symlinking src: {} to dst: {}",
                src.display(),
@@ -303,7 +303,7 @@ impl<'a> BuildSpec<'a> {
 
     fn remove_symlink_to_key_cache(&self, ui: &mut UI, rootfs: &Path) -> Result<()> {
         ui.status(Status::Deleting, "artifact key symlink")?;
-        stdfs::remove_dir_all(rootfs.join(CACHE_KEY_PATH))?;
+        stdfs::remove_dir_all(rootfs.join(CACHE_KEY_PATH_POSTFIX))?;
 
         Ok(())
     }
@@ -876,9 +876,9 @@ mod test {
             let mut ui = UI::with_sinks();
             build_spec().create_symlink_to_key_cache(&mut ui, rootfs.path())
                         .unwrap();
-            let link = rootfs.path().join(CACHE_KEY_PATH);
+            let link = rootfs.path().join(CACHE_KEY_PATH_POSTFIX);
 
-            assert_eq!(cache_key_path(None::<&Path>), link.read_link().unwrap());
+            assert_eq!(*CACHE_KEY_PATH, link.read_link().unwrap());
         }
 
         #[cfg(unix)]
